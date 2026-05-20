@@ -8,6 +8,7 @@ logger = logging.getLogger("rlapi")
 logger.setLevel(logging.INFO)
 logger.propagate = True  # send logs to root handler
 
+
 def log_event(event: dict):
     # Ensure timestamps are consistent
     event.setdefault("ts", datetime.now(timezone.utc).isoformat())

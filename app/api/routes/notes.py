@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_current_user
@@ -6,6 +6,7 @@ from app.api.schemas import NoteCreateRequest, NoteResponse
 from app.db.models import Note, User
 
 router = APIRouter(prefix="/notes", tags=["notes"])
+
 
 @router.post("", response_model=NoteResponse, status_code=201)
 def create_note(
@@ -24,6 +25,7 @@ def create_note(
         body=note.body,
         created_at=note.created_at.isoformat(),
     )
+
 
 @router.get("", response_model=list[NoteResponse])
 def list_notes(
@@ -47,6 +49,7 @@ def list_notes(
         for n in notes
     ]
 
+
 @router.get("/{note_id}", response_model=NoteResponse)
 def get_note(
     note_id: str,
@@ -67,6 +70,7 @@ def get_note(
         body=note.body,
         created_at=note.created_at.isoformat(),
     )
+
 
 @router.delete("/{note_id}", status_code=204)
 def delete_note(

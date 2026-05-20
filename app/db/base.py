@@ -1,5 +1,7 @@
 from sqlalchemy.orm import DeclarativeBase
 
-#SQLAlchemy needs a common “base class” to track all your models so it can create tables and so Alembic can discover them.
+
+# SQLAlchemy needs a common base class to track models and let Alembic
+# discover table metadata.
 class Base(DeclarativeBase):
     pass

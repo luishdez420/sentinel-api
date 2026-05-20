@@ -8,9 +8,9 @@ from collections import deque
 _lock = threading.Lock()
 
 _requests_total = 0
-_errors_total = 0          # 5xx only
-_client_errors_total = 0   # 4xx (optional but great)
-_rate_limited_total = 0    # 429 only
+_errors_total = 0  # 5xx only
+_client_errors_total = 0  # 4xx (optional but great)
+_rate_limited_total = 0  # 429 only
 
 _latencies_ms = deque(maxlen=2000)
 

@@ -13,8 +13,9 @@ logger = logging.getLogger("rlapi")
 app = FastAPI()
 
 app.include_router(health_router, tags=["health"])
-app.include_router(auth.router,prefix="/auth", tags=["auth"])
+app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(notes.router, prefix="/notes", tags=["notes"])
+
 
 @app.middleware("http")
 async def request_logger(request: Request, call_next):
@@ -44,7 +45,10 @@ async def request_logger(request: Request, call_next):
         )
         # record as 500 so metrics are correct
         record_request(status_code=500, latency_ms=latency_ms)
-        return JSONResponse({"detail": "Internal Server Error", "request_id": request_id}, status_code=500)
+        return JSONResponse(
+            {"detail": "Internal Server Error", "request_id": request_id},
+            status_code=500,
+        )
 
     finally:
         latency_ms = int((time.perf_counter() - start) * 1000)
@@ -64,6 +68,7 @@ async def request_logger(request: Request, call_next):
             },
         )
 
+
 @app.middleware("http")
 async def rate_limit_headers(request: Request, call_next):
     response = await call_next(request)
@@ -80,6 +85,7 @@ async def rate_limit_headers(request: Request, call_next):
         response.headers["X-RateLimit-Backend-Down"] = "1" if backend_down else "0"
 
     return response
+
 
 @app.get("/metrics")
 def metrics():
