@@ -1,0 +1,36 @@
+services:
+  api:
+    build: .
+    container_name: rlapi_api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:16
+    container_name: rlapi_db
+    environment:
+      POSTGRES_USER: rlapi
+      POSTGRES_PASSWORD: rlapi_password
+      POSTGRES_DB: rlapi
+    ports:
+      - "5433:5432"
+    volumes:
+      - rlapi_pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: rlapi_redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  rlapi_pgdata:
+
+# Why Docker here?
+
+# It gives you a consistent Postgres database without you installing Postgres manually.
