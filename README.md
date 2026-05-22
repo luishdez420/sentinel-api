@@ -9,6 +9,8 @@ This project was built as a portfolio-level backend system to show practical sof
 ## Features
 
 - JWT-based authentication
+- Required strong JWT secret configuration
+- Password length validation
 - Secure password hashing
 - PostgreSQL database persistence
 - Alembic database migrations
@@ -20,6 +22,8 @@ This project was built as a portfolio-level backend system to show practical sof
 - `/metrics` endpoint for operational visibility
 - Docker Compose setup for API, PostgreSQL, and Redis
 - Interactive API documentation with FastAPI Swagger UI
+- GitHub Actions quality checks for pull requests
+- Dependabot dependency update automation
 
 ---
 
@@ -36,6 +40,38 @@ This project was built as a portfolio-level backend system to show practical sof
 | Authentication | JWT |
 | Password Hashing | Argon2 via Passlib |
 | Containerization | Docker / Docker Compose |
+
+---
+
+## Security
+
+This project intentionally treats secrets as runtime configuration:
+
+- `.env` is ignored by Git and should never be committed.
+- `.env.example` documents the required variables with safe placeholder values.
+- `JWT_SECRET` is required at startup, must be at least 32 characters, and cannot
+  use known placeholder values.
+- Passwords are hashed with Argon2 before storage.
+- Protected endpoints require a valid Bearer token.
+
+Generate a local JWT secret with:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+Then copy `.env.example` to `.env` and replace the placeholder secret.
+
+---
+
+## CI / Pull Requests
+
+GitHub Actions runs on every pull request and on pushes to `main`.
+
+Current quality gates:
+
+- `ruff check .`
+- `ruff format --check`
 
 ---
 

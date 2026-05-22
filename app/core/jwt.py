@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta, timezone
+
 import jwt
 
-from app.core.config import JWT_SECRET, JWT_ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
+from app.core.config import settings
 
 
 def create_access_token(user_id: str) -> str:
@@ -9,10 +10,12 @@ def create_access_token(user_id: str) -> str:
     payload = {
         "sub": user_id,  # subject = user id
         "iat": int(now.timestamp()),
-        "exp": int((now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)).timestamp()),
+        "exp": int(
+            (now + timedelta(minutes=settings.access_token_expire_minutes)).timestamp()
+        ),
     }
-    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
 
 def decode_token(token: str) -> dict:
-    return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    return jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
