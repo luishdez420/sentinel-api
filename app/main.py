@@ -13,8 +13,8 @@ logger = logging.getLogger("rlapi")
 app = FastAPI()
 
 app.include_router(health_router, tags=["health"])
-app.include_router(auth.router, prefix="/auth", tags=["auth"])
-app.include_router(notes.router, prefix="/notes", tags=["notes"])
+app.include_router(auth.router, tags=["auth"])
+app.include_router(notes.router, tags=["notes"])
 
 
 @app.middleware("http")

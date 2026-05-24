@@ -1,0 +1,24 @@
+services:
+  test-db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: rlapi
+      POSTGRES_PASSWORD: rlapi_password
+      POSTGRES_DB: rlapi_test
+    ports:
+      - "55432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rlapi -d rlapi_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  test-redis:
+    image: redis:7
+    ports:
+      - "56379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 20

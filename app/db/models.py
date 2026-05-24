@@ -34,5 +34,7 @@ class Note(Base):
     body: Mapped[str] = mapped_column(Text, nullable=False)
 
     created_at: Mapped[datetime.datetime] = mapped_column(
-        DateTime(timezone=True), default=datetime.datetime.utcnow, nullable=False
+        DateTime(timezone=True),
+        default=lambda: datetime.datetime.now(datetime.UTC),
+        nullable=False,
     )

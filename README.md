@@ -72,6 +72,32 @@ Current quality gates:
 
 - `ruff check .`
 - `ruff format --check`
+- `pytest` integration tests against PostgreSQL and Redis
+
+---
+
+## Testing
+
+The test suite uses pytest and HTTPX against the FastAPI app, with PostgreSQL
+and Redis provided by Docker Compose.
+
+Start the test dependencies:
+
+```bash
+docker compose -f docker-compose.test.yml up -d --wait
+```
+
+Run the suite:
+
+```bash
+pytest
+```
+
+Clean up the test dependencies:
+
+```bash
+docker compose -f docker-compose.test.yml down -v
+```
 
 ---
 
