@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from app.db.session import SessionLocal
@@ -33,8 +34,11 @@ def health():
     status = "ok" if (db_ok and redis_ok) else "degraded"
     code = 200 if status == "ok" else 503
 
-    return {
-        "status": status,
-        "db": "ok" if db_ok else "down",
-        "redis": "ok" if redis_ok else "down",
-    }, code
+    return JSONResponse(
+        {
+            "status": status,
+            "db": "ok" if db_ok else "down",
+            "redis": "ok" if redis_ok else "down",
+        },
+        status_code=code,
+    )
