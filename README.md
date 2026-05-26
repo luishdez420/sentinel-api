@@ -76,6 +76,31 @@ Current quality gates:
 
 ---
 
+## Metrics and Logs
+
+Sentinel API emits structured JSON request logs with request IDs and exposes a
+Prometheus-compatible metrics endpoint at `/metrics`.
+
+Tracked signals include:
+
+- Request totals by method, path, and status code
+- Request latency histogram buckets
+- Rate-limit allow/block counters
+- Rate-limit backend failure counter
+- `X-Request-ID` response headers for traceability
+
+Example metrics:
+
+```bash
+curl http://localhost:8000/metrics
+```
+
+Grafana dashboard preview:
+
+![Grafana dashboard preview](docs/grafana-dashboard.svg)
+
+---
+
 ## Testing
 
 The test suite uses pytest and HTTPX against the FastAPI app, with PostgreSQL

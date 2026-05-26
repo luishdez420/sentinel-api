@@ -1,14 +1,19 @@
+import logging
 import time
 import uuid
-import logging
+
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
+from prometheus_client import CONTENT_TYPE_LATEST
 
-from app.core.metrics import record_request, get_metrics
-from app.api.routes.health import router as health_router
 from app.api.routes import auth, notes
+from app.api.routes.health import router as health_router
+from app.core.logging import configure_logging
+from app.core.metrics import record_request, render_prometheus_metrics
 
-logger = logging.getLogger("rlapi")
+configure_logging()
+
+logger = logging.getLogger("sentinel")
 
 app = FastAPI()
 
@@ -19,11 +24,12 @@ app.include_router(notes.router, tags=["notes"])
 
 @app.middleware("http")
 async def request_logger(request: Request, call_next):
-    request_id = str(uuid.uuid4())
+    request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
     request.state.request_id = request_id
 
     start = time.perf_counter()
     status_code = 500
+    response = None
 
     try:
         response = await call_next(request)
@@ -31,40 +37,51 @@ async def request_logger(request: Request, call_next):
         return response
 
     except Exception:
-        latency_ms = int((time.perf_counter() - start) * 1000)
+        latency_seconds = time.perf_counter() - start
         logger.exception(
             "unhandled_exception",
             extra={
-                "event": "request",
+                "event": "http_request",
                 "request_id": request_id,
                 "method": request.method,
                 "path": request.url.path,
                 "status_code": 500,
-                "latency_ms": latency_ms,
+                "latency_ms": int(latency_seconds * 1000),
             },
         )
-        # record as 500 so metrics are correct
-        record_request(status_code=500, latency_ms=latency_ms)
-        return JSONResponse(
+        response = JSONResponse(
             {"detail": "Internal Server Error", "request_id": request_id},
             status_code=500,
         )
+        return response
 
     finally:
-        latency_ms = int((time.perf_counter() - start) * 1000)
-        # If exception happened, we already recorded above. Prevent double count:
-        if status_code != 500:
-            record_request(status_code=status_code, latency_ms=latency_ms)
+        latency_seconds = time.perf_counter() - start
+        latency_ms = int(latency_seconds * 1000)
+        route = request.scope.get("route")
+        metric_path = getattr(route, "path", request.url.path)
+
+        record_request(
+            method=request.method,
+            path=metric_path,
+            status_code=status_code,
+            latency_seconds=latency_seconds,
+        )
+
+        if response is not None:
+            response.headers["X-Request-ID"] = request_id
 
         logger.info(
-            "request",
+            "http_request",
             extra={
-                "event": "request",
+                "event": "http_request",
                 "request_id": request_id,
                 "method": request.method,
                 "path": request.url.path,
                 "status_code": status_code,
                 "latency_ms": latency_ms,
+                "client_ip": request.client.host if request.client else None,
+                "user_agent": request.headers.get("user-agent"),
             },
         )
 
@@ -89,4 +106,7 @@ async def rate_limit_headers(request: Request, call_next):
 
 @app.get("/metrics")
 def metrics():
-    return get_metrics()
+    return Response(
+        content=render_prometheus_metrics(),
+        media_type=CONTENT_TYPE_LATEST,
+    )

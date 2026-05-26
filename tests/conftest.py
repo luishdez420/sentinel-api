@@ -45,7 +45,7 @@ def db_engine(database_url: str) -> Iterator[Engine]:
     engine.dispose()
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def migrated_database(database_url: str, db_engine: Engine) -> Iterator[None]:
     alembic_config = Config("alembic.ini")
     alembic_config.set_main_option("sqlalchemy.url", database_url)
@@ -58,8 +58,8 @@ def migrated_database(database_url: str, db_engine: Engine) -> Iterator[None]:
     command.downgrade(alembic_config, "base")
 
 
-@pytest.fixture(autouse=True)
-def clean_state(db_engine: Engine) -> Iterator[None]:
+@pytest.fixture
+def clean_state(db_engine: Engine, migrated_database: None) -> Iterator[None]:
     with db_engine.begin() as connection:
         connection.execute(text("TRUNCATE TABLE notes, users RESTART IDENTITY CASCADE"))
     redis_client.flushdb()
@@ -70,7 +70,7 @@ def clean_state(db_engine: Engine) -> Iterator[None]:
 
 
 @pytest.fixture
-async def client() -> AsyncIterator[httpx.AsyncClient]:
+async def client(clean_state: None) -> AsyncIterator[httpx.AsyncClient]:
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(
         transport=transport,

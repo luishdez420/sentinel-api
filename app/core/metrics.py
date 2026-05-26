@@ -1,61 +1,57 @@
-# app/core/metrics.py
 from __future__ import annotations
 
-import math
-import threading
-from collections import deque
+from prometheus_client import CollectorRegistry, Counter, Histogram, generate_latest
 
-_lock = threading.Lock()
+registry = CollectorRegistry()
 
-_requests_total = 0
-_errors_total = 0  # 5xx only
-_client_errors_total = 0  # 4xx (optional but great)
-_rate_limited_total = 0  # 429 only
+REQUESTS_TOTAL = Counter(
+    "sentinel_http_requests",
+    "Total HTTP requests processed by Sentinel API.",
+    labelnames=("method", "path", "status_code"),
+    registry=registry,
+)
 
-_latencies_ms = deque(maxlen=2000)
+REQUEST_LATENCY_SECONDS = Histogram(
+    "sentinel_http_request_duration_seconds",
+    "HTTP request latency in seconds.",
+    labelnames=("method", "path"),
+    buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10),
+    registry=registry,
+)
 
+RATE_LIMIT_EVENTS_TOTAL = Counter(
+    "sentinel_rate_limit_events",
+    "Rate limit decisions for authenticated requests.",
+    labelnames=("outcome",),
+    registry=registry,
+)
 
-def record_request(*, status_code: int, latency_ms: int) -> None:
-    global _requests_total, _errors_total, _client_errors_total, _rate_limited_total
-
-    with _lock:
-        _requests_total += 1
-        _latencies_ms.append(int(latency_ms))
-
-        if 500 <= status_code:
-            _errors_total += 1
-        elif 400 <= status_code:
-            _client_errors_total += 1
-
-        if status_code == 429:
-            _rate_limited_total += 1
-
-
-def _percentile(values: list[int], p: float) -> int:
-    if not values:
-        return 0
-    values.sort()
-    k = (len(values) - 1) * p
-    f = math.floor(k)
-    c = math.ceil(k)
-    if f == c:
-        return values[int(k)]
-    d0 = values[f] * (c - k)
-    d1 = values[c] * (k - f)
-    return int(round(d0 + d1))
+RATE_LIMIT_BACKEND_FAILURES_TOTAL = Counter(
+    "sentinel_rate_limit_backend_failures",
+    "Rate limit checks that failed open because Redis was unavailable.",
+    registry=registry,
+)
 
 
-def get_metrics() -> dict:
-    with _lock:
-        vals = list(_latencies_ms)
-        p50 = _percentile(vals, 0.50)
-        p95 = _percentile(vals, 0.95)
-        mx = max(vals) if vals else 0
+def record_request(
+    *,
+    method: str,
+    path: str,
+    status_code: int,
+    latency_seconds: float,
+) -> None:
+    status = str(status_code)
+    REQUESTS_TOTAL.labels(method=method, path=path, status_code=status).inc()
+    REQUEST_LATENCY_SECONDS.labels(method=method, path=path).observe(latency_seconds)
 
-        return {
-            "requests_total": _requests_total,
-            "errors_total": _errors_total,  # 5xx only
-            "client_errors_total": _client_errors_total,  # 4xx
-            "rate_limited_total": _rate_limited_total,  # 429
-            "latency_ms": {"p50": p50, "p95": p95, "max": mx},
-        }
+
+def record_rate_limit(*, allowed: bool, backend_down: bool) -> None:
+    outcome = "allowed" if allowed else "blocked"
+    RATE_LIMIT_EVENTS_TOTAL.labels(outcome=outcome).inc()
+
+    if backend_down:
+        RATE_LIMIT_BACKEND_FAILURES_TOTAL.inc()
+
+
+def render_prometheus_metrics() -> bytes:
+    return generate_latest(registry)
