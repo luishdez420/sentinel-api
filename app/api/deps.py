@@ -3,6 +3,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.core.jwt import decode_token
+from app.core.metrics import record_rate_limit
 from app.core.rate_limit import check_rate_limit
 from app.db.models import User
 from app.db.session import SessionLocal
@@ -43,6 +44,7 @@ def get_current_user(
         )
 
     allowed, remaining, retry_after, backend_down = check_rate_limit(user_id)
+    record_rate_limit(allowed=allowed, backend_down=backend_down)
 
     request.state.rate_limit_remaining = remaining
     request.state.rate_limit_retry_after = retry_after

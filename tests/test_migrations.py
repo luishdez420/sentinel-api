@@ -3,7 +3,7 @@ from alembic.script import ScriptDirectory
 from sqlalchemy import inspect
 
 
-def test_database_migrations_reach_head(db_engine):
+def test_database_migrations_reach_head(db_engine, migrated_database):
     inspector = inspect(db_engine)
     tables = set(inspector.get_table_names())
 
