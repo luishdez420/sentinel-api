@@ -107,6 +107,23 @@ fly secrets set REDIS_URL=...
 
 Expose internal port `8000` and use `/api/v1/health` as the health check path.
 
+This repository includes `fly.toml` for the `sentinel-api` app and a GitHub
+Actions workflow at `.github/workflows/deploy-fly.yml`.
+
+For GitHub Actions deployments:
+
+1. Create a Fly deploy token.
+2. Add it to GitHub repository secrets as `FLY_API_TOKEN`.
+3. Merge to `main` or run the `Deploy to Fly` workflow manually.
+
+Useful local checks:
+
+```bash
+flyctl auth whoami
+flyctl apps list
+flyctl deploy -a sentinel-api
+```
+
 ### Railway
 
 Create a service from the GitHub repository, add PostgreSQL and Redis plugins,
