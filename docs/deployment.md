@@ -22,6 +22,9 @@ Generate a JWT secret:
 python -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
 
+Fly Postgres may set `DATABASE_URL` with a `postgres://` prefix. The app
+normalizes that prefix for SQLAlchemy at startup.
+
 ## Local Production-Like Run
 
 Copy the example environment file and set a real `JWT_SECRET`:
@@ -107,7 +110,7 @@ fly secrets set REDIS_URL=...
 
 Expose internal port `8000` and use `/api/v1/health` as the health check path.
 
-This repository includes `fly.toml` for the `sentinel-api` app and a GitHub
+This repository includes `fly.toml` for the `sentinel-api-cqjiqw` app and a GitHub
 Actions workflow at `.github/workflows/deploy-fly.yml`.
 
 For GitHub Actions deployments:
@@ -121,7 +124,7 @@ Useful local checks:
 ```bash
 flyctl auth whoami
 flyctl apps list
-flyctl deploy -a sentinel-api
+flyctl deploy -a sentinel-api-cqjiqw
 ```
 
 ### Railway

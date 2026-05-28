@@ -30,6 +30,6 @@ jobs:
         uses: superfly/flyctl-actions/setup-flyctl@master
 
       - name: Deploy app
-        run: flyctl deploy --remote-only --app sentinel-api
+        run: flyctl deploy --remote-only --app sentinel-api-cqjiqw
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

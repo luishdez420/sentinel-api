@@ -17,6 +17,13 @@ def _required_env(name: str) -> str:
     return value
 
 
+def _database_url() -> str:
+    value = _required_env("DATABASE_URL")
+    if value.startswith("postgres://"):
+        return value.replace("postgres://", "postgresql+psycopg2://", 1)
+    return value
+
+
 def _int_env(name: str, default: int) -> int:
     raw_value = os.getenv(name)
     if raw_value is None:
@@ -63,7 +70,7 @@ class Settings:
 def get_settings() -> Settings:
     settings = Settings(
         app_env=os.getenv("APP_ENV", "development"),
-        database_url=_required_env("DATABASE_URL"),
+        database_url=_database_url(),
         redis_url=os.getenv("REDIS_URL", "redis://redis:6379/0"),
         jwt_secret=_required_env("JWT_SECRET"),
         rate_limit_per_minute=_int_env(
