@@ -25,6 +25,18 @@ api_v1.include_router(notes.router, tags=["notes"])
 app.include_router(api_v1)
 
 
+@app.get("/", tags=["service"])
+def service_index():
+    return {
+        "service": "Sentinel API",
+        "status": "running",
+        "version": "v1",
+        "docs": "/docs",
+        "health": "/api/v1/health",
+        "metrics": "/metrics",
+    }
+
+
 def _error_code(status_code: int) -> str:
     return {
         400: "bad_request",

@@ -66,6 +66,15 @@ python -c "import secrets; print(secrets.token_urlsafe(48))"
 
 Then copy `.env.example` to `.env` and replace the placeholder secret.
 
+Minimal deployment configuration:
+
+```env
+DATABASE_URL=postgresql+psycopg2://user:password@host:5432/database
+REDIS_URL=redis://host:6379/0
+JWT_SECRET=replace-with-a-generated-secret
+RATE_LIMIT_PER_MINUTE=20
+```
+
 ---
 
 ## CI / Pull Requests
@@ -77,6 +86,23 @@ Current quality gates:
 - `ruff check .`
 - `ruff format --check`
 - `pytest` integration tests against PostgreSQL and Redis
+
+---
+
+## Deployment
+
+The project includes production-oriented Docker packaging:
+
+- Non-root container user
+- Startup migrations with Alembic
+- Docker and Compose health checks
+- Runtime environment documentation
+- Deployment notes for Render, Fly.io, Railway, and AWS ECS
+
+See [docs/deployment.md](docs/deployment.md).
+
+When deployed, the public service index is available at `/`, with links to
+`/docs`, `/api/v1/health`, and `/metrics`.
 
 ---
 

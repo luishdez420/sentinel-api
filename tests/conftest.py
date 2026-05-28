@@ -15,10 +15,8 @@ os.environ.setdefault(
 )
 os.environ.setdefault("JWT_SECRET", "test-secret-value-that-is-at-least-32-chars")
 os.environ.setdefault("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
-os.environ.setdefault("REDIS_HOST", "localhost")
-os.environ.setdefault("REDIS_PORT", "56379")
-os.environ.setdefault("RATE_LIMIT", "20")
-os.environ.setdefault("RATE_LIMIT_WINDOW_SECONDS", "60")
+os.environ.setdefault("REDIS_URL", "redis://localhost:56379/0")
+os.environ.setdefault("RATE_LIMIT_PER_MINUTE", "20")
 
 from app.core.rate_limit import redis_client  # noqa: E402
 from app.main import app  # noqa: E402

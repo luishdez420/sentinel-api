@@ -1,0 +1,16 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+.git
+.github
+.pytest_cache
+.ruff_cache
+.venv
+__pycache__
+*.py[cod]
+coverage.xml
+docker-compose.test.yml
+docs
+htmlcov
+tests
