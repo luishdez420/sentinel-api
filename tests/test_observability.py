@@ -8,7 +8,9 @@ from app.core.logging import JsonFormatter
 
 @pytest.mark.anyio
 async def test_request_id_is_returned(client):
-    response = await client.get("/health", headers={"X-Request-ID": "test-request-id"})
+    response = await client.get(
+        "/api/v1/health", headers={"X-Request-ID": "test-request-id"}
+    )
 
     assert response.status_code == 200
     assert response.headers["X-Request-ID"] == "test-request-id"
@@ -16,7 +18,7 @@ async def test_request_id_is_returned(client):
 
 @pytest.mark.anyio
 async def test_metrics_endpoint_exposes_prometheus_metrics(client):
-    await client.get("/health")
+    await client.get("/api/v1/health")
 
     response = await client.get("/metrics")
 
@@ -37,8 +39,8 @@ async def test_rate_limit_metrics_are_recorded(client, register_and_login, monke
     token = await register_and_login()
     headers = {"Authorization": f"Bearer {token}"}
 
-    await client.get("/auth/me", headers=headers)
-    await client.get("/auth/me", headers=headers)
+    await client.get("/api/v1/auth/me", headers=headers)
+    await client.get("/api/v1/auth/me", headers=headers)
     response = await client.get("/metrics")
 
     assert response.status_code == 200

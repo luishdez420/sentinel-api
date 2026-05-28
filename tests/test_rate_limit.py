@@ -12,9 +12,9 @@ async def test_authenticated_requests_are_rate_limited(
     token = await register_and_login()
     headers = {"Authorization": f"Bearer {token}"}
 
-    first_response = await client.get("/auth/me", headers=headers)
-    second_response = await client.get("/auth/me", headers=headers)
-    third_response = await client.get("/auth/me", headers=headers)
+    first_response = await client.get("/api/v1/auth/me", headers=headers)
+    second_response = await client.get("/api/v1/auth/me", headers=headers)
+    third_response = await client.get("/api/v1/auth/me", headers=headers)
 
     assert first_response.status_code == 200
     assert first_response.headers["X-RateLimit-Remaining"] == "1"

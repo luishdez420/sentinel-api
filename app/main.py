@@ -2,7 +2,8 @@ import logging
 import time
 import uuid
 
-from fastapi import FastAPI, Request
+from fastapi import APIRouter, FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
 from prometheus_client import CONTENT_TYPE_LATEST
 
@@ -17,9 +18,54 @@ logger = logging.getLogger("sentinel")
 
 app = FastAPI()
 
-app.include_router(health_router, tags=["health"])
-app.include_router(auth.router, tags=["auth"])
-app.include_router(notes.router, tags=["notes"])
+api_v1 = APIRouter(prefix="/api/v1")
+api_v1.include_router(health_router, tags=["health"])
+api_v1.include_router(auth.router, tags=["auth"])
+api_v1.include_router(notes.router, tags=["notes"])
+app.include_router(api_v1)
+
+
+def _error_code(status_code: int) -> str:
+    return {
+        400: "bad_request",
+        401: "unauthorized",
+        403: "forbidden",
+        404: "not_found",
+        422: "validation_error",
+        429: "rate_limited",
+    }.get(status_code, "error")
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    request_id = getattr(request.state, "request_id", None)
+    return JSONResponse(
+        {
+            "error": {
+                "code": _error_code(exc.status_code),
+                "message": str(exc.detail),
+                "request_id": request_id,
+            }
+        },
+        status_code=exc.status_code,
+        headers=exc.headers,
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    request_id = getattr(request.state, "request_id", None)
+    return JSONResponse(
+        {
+            "error": {
+                "code": "validation_error",
+                "message": "Request validation failed",
+                "request_id": request_id,
+                "details": exc.errors(),
+            }
+        },
+        status_code=422,
+    )
 
 
 @app.middleware("http")

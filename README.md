@@ -15,6 +15,10 @@ This project was built as a portfolio-level backend system to show practical sof
 - PostgreSQL database persistence
 - Alembic database migrations
 - Protected CRUD endpoints
+- Versioned API routes under `/api/v1`
+- Consistent success and error response envelopes
+- Paginated notes listing
+- Idempotent note creation with `Idempotency-Key`
 - User ownership checks for resources
 - Redis-backed fixed-window rate limiting
 - HTTP 429 responses with rate-limit headers
@@ -95,9 +99,79 @@ Example metrics:
 curl http://localhost:8000/metrics
 ```
 
-Grafana dashboard preview:
+The previous static Grafana preview was removed because it was not generated
+from live data. A real dashboard screenshot should be added only after running
+Grafana against the live Prometheus endpoint.
 
-![Grafana dashboard preview](docs/grafana-dashboard.svg)
+---
+
+## API Contract
+
+All application routes are versioned under `/api/v1`.
+
+Examples:
+
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+- `GET /api/v1/auth/me`
+- `GET /api/v1/notes?limit=20&offset=0`
+- `POST /api/v1/notes`
+- `GET /api/v1/notes/{note_id}`
+- `DELETE /api/v1/notes/{note_id}`
+- `GET /api/v1/health`
+
+Successful responses use a `data` envelope:
+
+```json
+{
+  "data": {
+    "id": "note-id",
+    "title": "Launch checklist",
+    "body": "Write tests first.",
+    "created_at": "2026-05-27T12:00:00+00:00"
+  }
+}
+```
+
+Paginated responses include `meta`:
+
+```json
+{
+  "data": [],
+  "meta": {
+    "limit": 20,
+    "offset": 0,
+    "total": 0,
+    "next_offset": null
+  }
+}
+```
+
+Errors use an `error` envelope:
+
+```json
+{
+  "error": {
+    "code": "not_found",
+    "message": "Note not found",
+    "request_id": "request-id"
+  }
+}
+```
+
+Note creation supports safe retries:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/notes \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Idempotency-Key: create-launch-checklist" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Launch checklist","body":"Write tests first."}'
+```
+
+The first request creates the note with `201`. Repeating the same
+`Idempotency-Key` returns the original note with `200` instead of creating a
+duplicate.
 
 ---
 

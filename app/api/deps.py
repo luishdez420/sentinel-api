@@ -8,7 +8,7 @@ from app.core.rate_limit import check_rate_limit
 from app.db.models import User
 from app.db.session import SessionLocal
 
-bearer_scheme = HTTPBearer()
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def get_db():
@@ -21,9 +21,14 @@ def get_db():
 
 def get_current_user(
     request: Request,
-    creds: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    creds: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     db: Session = Depends(get_db),
 ) -> User:
+    if creds is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing bearer token"
+        )
+
     token = creds.credentials
     try:
         payload = decode_token(token)
