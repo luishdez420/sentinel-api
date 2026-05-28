@@ -1,20 +1,17 @@
 from __future__ import annotations
 
 import logging
-import os
 
 import redis
 
+from app.core.config import settings
+
 logger = logging.getLogger("sentinel")
 
-REDIS_HOST = os.getenv("REDIS_HOST", "redis")
-REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
-RATE_LIMIT = int(os.getenv("RATE_LIMIT", "20"))
-WINDOW_SECONDS = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
+RATE_LIMIT = settings.rate_limit_per_minute
+WINDOW_SECONDS = 60
 
-redis_client = redis.Redis(
-    host=REDIS_HOST, port=REDIS_PORT, db=0, decode_responses=True
-)
+redis_client = redis.Redis.from_url(settings.redis_url, decode_responses=True)
 
 
 def check_rate_limit(user_id: int) -> tuple[bool, int, int | None, bool]:

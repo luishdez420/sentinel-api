@@ -66,6 +66,15 @@ python -c "import secrets; print(secrets.token_urlsafe(48))"
 
 Then copy `.env.example` to `.env` and replace the placeholder secret.
 
+Minimal deployment configuration:
+
+```env
+DATABASE_URL=postgresql+psycopg2://user:password@host:5432/database
+REDIS_URL=redis://host:6379/0
+JWT_SECRET=replace-with-a-generated-secret
+RATE_LIMIT_PER_MINUTE=20
+```
+
 ---
 
 ## CI / Pull Requests

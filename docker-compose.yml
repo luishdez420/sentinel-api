@@ -8,8 +8,7 @@ services:
       - .env
     environment:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-rlapi}:${POSTGRES_PASSWORD:-rlapi_password}@db:5432/${POSTGRES_DB:-rlapi}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+      REDIS_URL: redis://redis:6379/0
     depends_on:
       db:
         condition: service_healthy

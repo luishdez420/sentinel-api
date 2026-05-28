@@ -9,12 +9,10 @@ Redis, Alembic migrations, JSON logs, Prometheus metrics, and health checks.
 |---|---:|---|---|
 | `APP_ENV` | No | `production` | Runtime environment label. |
 | `DATABASE_URL` | Yes | `postgresql+psycopg2://user:pass@host:5432/db` | PostgreSQL connection string. |
+| `REDIS_URL` | No | `redis://host:6379/0` | Redis connection string. Defaults to local Compose Redis. |
 | `JWT_SECRET` | Yes | generated secret | Must be 32+ random characters. |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | No | `30` | JWT access token lifetime. |
-| `REDIS_HOST` | Yes | `redis` | Redis host or managed Redis hostname. |
-| `REDIS_PORT` | No | `6379` | Redis port. |
-| `RATE_LIMIT` | No | `20` | Requests per rate-limit window. |
-| `RATE_LIMIT_WINDOW_SECONDS` | No | `60` | Rate-limit window duration. |
+| `RATE_LIMIT_PER_MINUTE` | No | `20` | Requests allowed per user per minute. |
 | `HOST` | No | `0.0.0.0` | Container bind host. |
 | `PORT` | No | `8000` | Container bind port. |
 
@@ -85,8 +83,7 @@ PostgreSQL and Redis, then set:
 
 ```text
 DATABASE_URL=<managed postgres internal connection string>
-REDIS_HOST=<managed redis host>
-REDIS_PORT=<managed redis port>
+REDIS_URL=<managed redis connection string>
 JWT_SECRET=<generated secret>
 APP_ENV=production
 ```
@@ -105,8 +102,7 @@ services, and configure secrets:
 ```bash
 fly secrets set JWT_SECRET=...
 fly secrets set DATABASE_URL=...
-fly secrets set REDIS_HOST=...
-fly secrets set REDIS_PORT=6379
+fly secrets set REDIS_URL=...
 ```
 
 Expose internal port `8000` and use `/api/v1/health` as the health check path.
