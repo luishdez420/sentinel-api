@@ -80,6 +80,23 @@ Current quality gates:
 
 ---
 
+## Deployment
+
+The project includes production-oriented Docker packaging:
+
+- Non-root container user
+- Startup migrations with Alembic
+- Docker and Compose health checks
+- Runtime environment documentation
+- Deployment notes for Render, Fly.io, Railway, and AWS ECS
+
+See [docs/deployment.md](docs/deployment.md).
+
+When deployed, the public service index is available at `/`, with links to
+`/docs`, `/api/v1/health`, and `/metrics`.
+
+---
+
 ## Metrics and Logs
 
 Sentinel API emits structured JSON request logs with request IDs and exposes a
