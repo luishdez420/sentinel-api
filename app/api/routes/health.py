@@ -8,6 +8,11 @@ from app.core.rate_limit import redis_client
 router = APIRouter()
 
 
+@router.get("/health/live")
+def liveness():
+    return {"status": "ok"}
+
+
 @router.get("/health")
 def health():
     db_ok = True

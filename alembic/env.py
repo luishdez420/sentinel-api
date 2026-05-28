@@ -62,6 +62,8 @@ def run_migrations_online() -> None:
     db_url = os.getenv("DATABASE_URL")
     if not db_url:
         raise RuntimeError("DATABASE_URL is not set")
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql+psycopg2://", 1)
 
     connectable = create_engine(db_url, poolclass=NullPool)
 

@@ -22,6 +22,9 @@ Generate a JWT secret:
 python -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
 
+Fly Postgres may set `DATABASE_URL` with a `postgres://` prefix. The app
+normalizes that prefix for SQLAlchemy at startup.
+
 ## Local Production-Like Run
 
 Copy the example environment file and set a real `JWT_SECRET`:
@@ -40,7 +43,8 @@ The API will be available at:
 
 - Service index: `http://localhost:8000/`
 - API docs: `http://localhost:8000/docs`
-- Health check: `http://localhost:8000/api/v1/health`
+- Liveness check: `http://localhost:8000/api/v1/health/live`
+- Readiness check: `http://localhost:8000/api/v1/health`
 - Metrics: `http://localhost:8000/metrics`
 
 Stop and remove containers:
@@ -64,7 +68,7 @@ The production image:
 - Installs pinned dependencies from `requirements.txt`
 - Runs `alembic upgrade head` before starting the API
 - Starts Uvicorn with proxy header support
-- Includes an HTTP health check against `/api/v1/health`
+- Includes an HTTP liveness check against `/api/v1/health/live`
 
 ## Platform Deployment Notes
 
@@ -91,7 +95,7 @@ APP_ENV=production
 Set the health check path to:
 
 ```text
-/api/v1/health
+/api/v1/health/live
 ```
 
 ### Fly.io
@@ -105,9 +109,11 @@ fly secrets set DATABASE_URL=...
 fly secrets set REDIS_URL=...
 ```
 
-Expose internal port `8000` and use `/api/v1/health` as the health check path.
+Expose internal port `8000` and use `/api/v1/health/live` as the health check
+path. Use `/api/v1/health` as the deeper readiness endpoint when you want to
+verify PostgreSQL and Redis are reachable.
 
-This repository includes `fly.toml` for the `sentinel-api` app and a GitHub
+This repository includes `fly.toml` for the `sentinel-api-cqjiqw` app and a GitHub
 Actions workflow at `.github/workflows/deploy-fly.yml`.
 
 For GitHub Actions deployments:
@@ -121,7 +127,7 @@ Useful local checks:
 ```bash
 flyctl auth whoami
 flyctl apps list
-flyctl deploy -a sentinel-api
+flyctl deploy -a sentinel-api-cqjiqw
 ```
 
 ### Railway

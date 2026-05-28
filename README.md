@@ -23,6 +23,8 @@ This project was built as a portfolio-level backend system to show practical sof
 - Redis-backed fixed-window rate limiting
 - HTTP 429 responses with rate-limit headers
 - Structured request logging
+- `/api/v1/health/live` liveness check for platform routing
+- `/api/v1/health` readiness check for PostgreSQL and Redis
 - `/metrics` endpoint for operational visibility
 - Docker Compose setup for API, PostgreSQL, and Redis
 - Interactive API documentation with FastAPI Swagger UI
