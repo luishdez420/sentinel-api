@@ -1,5 +1,5 @@
-app = "sentinel-api"
-primary_region = "iad"
+app = "sentinel-api-cqjiqw"
+primary_region = "ewr"
 
 [build]
   dockerfile = "Dockerfile"
@@ -9,9 +9,9 @@ primary_region = "iad"
   PORT = "8000"
 
 [http_service]
-  internal_port = 8000
+  internal_port = 8_000
   force_https = true
-  auto_stop_machines = "stop"
+  auto_stop_machines = true
   auto_start_machines = true
   min_machines_running = 0
   processes = ["app"]
@@ -22,3 +22,9 @@ primary_region = "iad"
     method = "GET"
     timeout = "5s"
     path = "/api/v1/health"
+
+[[vm]]
+cpu_kind = "shared"
+cpus = 1
+memory = "1gb"
+memory_mb = 256
