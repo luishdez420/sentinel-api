@@ -1,5 +1,5 @@
 app = "sentinel-api-cqjiqw"
-primary_region = "ewr"
+primary_region = "iad"
 
 [build]
   dockerfile = "Dockerfile"
