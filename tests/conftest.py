@@ -86,17 +86,17 @@ def register_and_login(client: httpx.AsyncClient):
         password: str = "correct-password",
     ) -> str:
         register_response = await client.post(
-            "/auth/register",
+            "/api/v1/auth/register",
             json={"email": email, "password": password},
         )
         assert register_response.status_code == 201
 
         login_response = await client.post(
-            "/auth/login",
+            "/api/v1/auth/login",
             json={"email": email, "password": password},
         )
         assert login_response.status_code == 200
 
-        return login_response.json()["access_token"]
+        return login_response.json()["data"]["access_token"]
 
     return _register_and_login
