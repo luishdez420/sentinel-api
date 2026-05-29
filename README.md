@@ -20,11 +20,11 @@ This project was built as a portfolio-level backend system to show practical sof
 - Paginated notes listing
 - Idempotent note creation with `Idempotency-Key`
 - User ownership checks for resources
-- Redis-backed fixed-window rate limiting
+- Redis-backed fixed-window rate limiting with a no-cost in-memory deployment option
 - HTTP 429 responses with rate-limit headers
 - Structured request logging
 - `/api/v1/health/live` liveness check for platform routing
-- `/api/v1/health` readiness check for PostgreSQL and Redis
+- `/api/v1/health` readiness check for PostgreSQL and the active rate-limit backend
 - `/metrics` endpoint for operational visibility
 - Docker Compose setup for API, PostgreSQL, and Redis
 - Interactive API documentation with FastAPI Swagger UI
@@ -76,6 +76,8 @@ REDIS_URL=redis://host:6379/0
 JWT_SECRET=replace-with-a-generated-secret
 RATE_LIMIT_PER_MINUTE=20
 ```
+
+For single-machine no-cost deployments, set `REDIS_URL=memory://`.
 
 ---
 

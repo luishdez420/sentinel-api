@@ -71,7 +71,7 @@ def get_settings() -> Settings:
     settings = Settings(
         app_env=os.getenv("APP_ENV", "development"),
         database_url=_database_url(),
-        redis_url=os.getenv("REDIS_URL", "redis://redis:6379/0"),
+        redis_url=os.getenv("REDIS_URL", "memory://"),
         jwt_secret=_required_env("JWT_SECRET"),
         rate_limit_per_minute=_int_env(
             "RATE_LIMIT_PER_MINUTE",
