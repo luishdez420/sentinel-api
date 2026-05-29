@@ -32,7 +32,7 @@ pytest==9.0.2
 python-dotenv==1.2.2
 redis==7.4.0
 ruff==0.15.14
-SQLAlchemy==2.0.46
+SQLAlchemy==2.0.50
 starlette==0.50.0
 typing-inspection==0.4.2
 typing_extensions==4.15.0
