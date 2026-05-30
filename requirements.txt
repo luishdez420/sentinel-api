@@ -27,7 +27,7 @@ pycparser==3.0
 pydantic==2.12.5
 pydantic_core==2.41.5
 Pygments==2.19.2
-PyJWT==2.10.1
+PyJWT==2.13.0
 pytest==9.0.2
 python-dotenv==1.2.2
 redis==7.4.0
