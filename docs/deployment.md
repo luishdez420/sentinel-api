@@ -1,7 +1,8 @@
 # Deployment Guide
 
 Sentinel API is packaged as a Dockerized FastAPI service with PostgreSQL,
-Redis, Alembic migrations, JSON logs, Prometheus metrics, and health checks.
+optional Redis-compatible rate limiting, Alembic migrations, JSON logs,
+Prometheus metrics, and health checks.
 
 ## Required Environment Variables
 
@@ -9,7 +10,7 @@ Redis, Alembic migrations, JSON logs, Prometheus metrics, and health checks.
 |---|---:|---|---|
 | `APP_ENV` | No | `production` | Runtime environment label. |
 | `DATABASE_URL` | Yes | `postgresql+psycopg2://user:pass@host:5432/db` | PostgreSQL connection string. |
-| `REDIS_URL` | No | `redis://host:6379/0` | Redis connection string. Defaults to local Compose Redis. |
+| `REDIS_URL` | No | `redis://host:6379/0` or `memory://` | Redis connection string. Use `memory://` for no-cost single-machine deployments. |
 | `JWT_SECRET` | Yes | generated secret | Must be 32+ random characters. |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | No | `30` | JWT access token lifetime. |
 | `RATE_LIMIT_PER_MINUTE` | No | `20` | Requests allowed per user per minute. |
@@ -76,18 +77,19 @@ Most container platforms need the same pieces:
 
 1. A Docker image built from this repository.
 2. A managed PostgreSQL database.
-3. A managed Redis instance.
+3. A managed Redis instance, or `REDIS_URL=memory://` for no-cost single-machine deployments.
 4. Environment variables from the table above.
 5. A public HTTP service exposing container port `8000`.
 
 ### Render
 
 Use a Web Service backed by this repository's Dockerfile. Add managed
-PostgreSQL and Redis, then set:
+PostgreSQL and either managed Redis or the in-memory rate-limit backend, then
+set:
 
 ```text
 DATABASE_URL=<managed postgres internal connection string>
-REDIS_URL=<managed redis connection string>
+REDIS_URL=memory://
 JWT_SECRET=<generated secret>
 APP_ENV=production
 ```
@@ -100,18 +102,18 @@ Set the health check path to:
 
 ### Fly.io
 
-Create a Fly app from the Dockerfile, attach Postgres and Redis-compatible
-services, and configure secrets:
+Create a Fly app from the Dockerfile, attach Postgres, and configure secrets.
+For a no-cost portfolio deployment, use the in-memory rate-limit backend:
 
 ```bash
 fly secrets set JWT_SECRET=...
 fly secrets set DATABASE_URL=...
-fly secrets set REDIS_URL=...
+fly secrets set REDIS_URL=memory://
 ```
 
 Expose internal port `8000` and use `/api/v1/health/live` as the health check
 path. Use `/api/v1/health` as the deeper readiness endpoint when you want to
-verify PostgreSQL and Redis are reachable.
+verify PostgreSQL and the active rate-limit backend are reachable.
 
 This repository includes `fly.toml` for the `sentinel-api-cqjiqw` app and a GitHub
 Actions workflow at `.github/workflows/deploy-fly.yml`.

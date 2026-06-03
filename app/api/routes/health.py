@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from app.db.session import SessionLocal
-from app.core.rate_limit import redis_client
+from app.core.rate_limit import rate_limit_backend, redis_client
 
 router = APIRouter()
 
@@ -16,7 +16,7 @@ def liveness():
 @router.get("/health")
 def health():
     db_ok = True
-    redis_ok = True
+    rate_limit_ok = True
 
     # DB check
     try:
@@ -30,20 +30,21 @@ def health():
         except Exception:
             pass
 
-    # Redis check
+    # Rate limit backend check
     try:
         redis_client.ping()
     except Exception:
-        redis_ok = False
+        rate_limit_ok = False
 
-    status = "ok" if (db_ok and redis_ok) else "degraded"
+    status = "ok" if (db_ok and rate_limit_ok) else "degraded"
     code = 200 if status == "ok" else 503
 
     return JSONResponse(
         {
             "status": status,
             "db": "ok" if db_ok else "down",
-            "redis": "ok" if redis_ok else "down",
+            "rate_limit_backend": rate_limit_backend,
+            "rate_limit": "ok" if rate_limit_ok else "down",
         },
         status_code=code,
     )
