@@ -7,7 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
 from prometheus_client import CONTENT_TYPE_LATEST
 
-from app.api.routes import auth, notes
+from app.api.routes import api_keys, auth, notes
 from app.api.routes.health import router as health_router
 from app.core.logging import configure_logging
 from app.core.metrics import record_request, render_prometheus_metrics
@@ -21,6 +21,7 @@ app = FastAPI()
 api_v1 = APIRouter(prefix="/api/v1")
 api_v1.include_router(health_router, tags=["health"])
 api_v1.include_router(auth.router, tags=["auth"])
+api_v1.include_router(api_keys.router, tags=["api keys"])
 api_v1.include_router(notes.router, tags=["notes"])
 app.include_router(api_v1)
 
@@ -148,10 +149,13 @@ async def request_logger(request: Request, call_next):
 async def rate_limit_headers(request: Request, call_next):
     response = await call_next(request)
 
+    limit = getattr(request.state, "rate_limit_limit", None)
     remaining = getattr(request.state, "rate_limit_remaining", None)
     retry_after = getattr(request.state, "rate_limit_retry_after", None)
     backend_down = getattr(request.state, "rate_limit_backend_down", None)
 
+    if limit is not None:
+        response.headers["X-RateLimit-Limit"] = str(limit)
     if remaining is not None:
         response.headers["X-RateLimit-Remaining"] = str(remaining)
     if retry_after is not None:

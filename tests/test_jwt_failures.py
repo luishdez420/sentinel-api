@@ -6,7 +6,7 @@ async def test_protected_route_rejects_missing_token(client):
     response = await client.get("/api/v1/auth/me")
 
     assert response.status_code == 401
-    assert response.json()["error"]["message"] == "Missing bearer token"
+    assert response.json()["error"]["message"] == "Missing bearer token or API key"
 
 
 @pytest.mark.anyio

@@ -14,6 +14,7 @@ Prometheus metrics, and health checks.
 | `JWT_SECRET` | Yes | generated secret | Must be 32+ random characters. |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | No | `30` | JWT access token lifetime. |
 | `RATE_LIMIT_PER_MINUTE` | No | `20` | Requests allowed per user per minute. |
+| `API_KEY_RATE_LIMIT_PER_MINUTE` | No | `100` | Requests allowed per API key per minute. |
 | `HOST` | No | `0.0.0.0` | Container bind host. |
 | `PORT` | No | `8000` | Container bind port. |
 

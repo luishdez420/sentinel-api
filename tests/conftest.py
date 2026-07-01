@@ -59,7 +59,12 @@ def migrated_database(database_url: str, db_engine: Engine) -> Iterator[None]:
 @pytest.fixture
 def clean_state(db_engine: Engine, migrated_database: None) -> Iterator[None]:
     with db_engine.begin() as connection:
-        connection.execute(text("TRUNCATE TABLE notes, users RESTART IDENTITY CASCADE"))
+        connection.execute(
+            text(
+                "TRUNCATE TABLE audit_logs, api_keys, notes, users "
+                "RESTART IDENTITY CASCADE"
+            )
+        )
     redis_client.flushdb()
 
     yield

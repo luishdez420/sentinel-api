@@ -95,3 +95,40 @@ class DeleteResponse(BaseModel):
 
 class DeleteEnvelope(BaseModel):
     data: DeleteResponse
+
+
+class ApiKeyCreateRequest(BaseModel):
+    model_config = {"json_schema_extra": {"examples": [{"name": "ci-deploy-script"}]}}
+
+    name: str = Field(min_length=1, max_length=100)
+
+
+class ApiKeyCreateResponse(BaseModel):
+    id: str
+    name: str
+    prefix: str
+    api_key: str
+    is_active: bool
+    created_at: str
+
+
+class ApiKeyResponse(BaseModel):
+    id: str
+    name: str
+    prefix: str
+    is_active: bool
+    created_at: str
+    last_used_at: str | None
+    revoked_at: str | None
+
+
+class ApiKeyCreateEnvelope(BaseModel):
+    data: ApiKeyCreateResponse
+
+
+class ApiKeysEnvelope(BaseModel):
+    data: list[ApiKeyResponse]
+
+
+class ApiKeyEnvelope(BaseModel):
+    data: ApiKeyResponse

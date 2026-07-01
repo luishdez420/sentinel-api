@@ -2,9 +2,9 @@
 
 Sentinel API is a production-style FastAPI backend for authenticated note
 management. It is intentionally scoped like a real service rather than a demo:
-versioned routes, JWT authentication, ownership checks, database migrations,
-rate limiting, structured logs, Prometheus metrics, Docker packaging, CI, and a
-deployable Fly.io configuration.
+versioned routes, JWT and API-key authentication, ownership checks, database
+migrations, per-user rate limiting, audit logs, structured logs, Prometheus
+metrics, Docker packaging, CI, and a deployable Fly.io configuration.
 
 The goal of the project is to show backend engineering judgment: how to protect
 user data, keep API behavior consistent, make failures observable, and document
@@ -15,7 +15,7 @@ the tradeoffs behind operational decisions.
 Many portfolio APIs stop at basic CRUD. Sentinel API treats that CRUD surface as
 the beginning of the engineering problem:
 
-- Users need secure registration, login, and authenticated access.
+- Users need secure registration, login, API keys, and authenticated access.
 - Notes must be isolated by owner so one user cannot read another user's data.
 - Clients need predictable response shapes, pagination, and retry-safe writes.
 - Operators need health checks, request IDs, metrics, and logs when something
@@ -36,6 +36,7 @@ FastAPI app
         |
         |-- API v1 router
         |     |-- auth: register, login, current user
+        |     |-- api keys: create, list, revoke
         |     |-- notes: create, list, get, delete
         |     |-- health: liveness and readiness
         |
@@ -46,7 +47,7 @@ FastAPI app
         |     |-- rate-limit response headers
         |
         |-- SQLAlchemy + Alembic
-        |     |-- PostgreSQL users and notes tables
+        |     |-- PostgreSQL users, notes, api_keys, audit_logs
         |
         |-- rate-limit backend
               |-- Redis for local/distributed deployments
@@ -61,6 +62,9 @@ Core routes:
 | `POST /api/v1/auth/register` | Create a user with a hashed password. |
 | `POST /api/v1/auth/login` | Return a JWT access token. |
 | `GET /api/v1/auth/me` | Return the authenticated user. |
+| `POST /api/v1/api-keys` | Create an API key and return the full value once. |
+| `GET /api/v1/api-keys` | List safe API-key metadata. |
+| `DELETE /api/v1/api-keys/{key_id}` | Revoke an API key. |
 | `POST /api/v1/notes` | Create a note, optionally idempotent. |
 | `GET /api/v1/notes` | List notes with `limit` and `offset` pagination. |
 | `GET /api/v1/notes/{note_id}` | Fetch one owned note. |
@@ -75,6 +79,8 @@ Sentinel API treats security as runtime behavior, not just documentation.
 
 - Passwords are hashed with Argon2 through Passlib before storage.
 - JWTs are signed with `HS256` and validated on protected routes.
+- API keys are generated with secure random bytes and stored only as hashes.
+- API key responses expose only a short prefix after creation.
 - `JWT_SECRET` is required at startup, must be at least 32 characters, and cannot
   use known placeholder values.
 - `.env` is ignored by Git; `.env.example` contains only safe placeholders.
@@ -95,14 +101,69 @@ Example error response:
 }
 ```
 
+## API Key Management
+
+API keys let scripts, integrations, and external clients call protected routes
+without reusing an interactive login token.
+
+Create a key with a JWT:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/api-keys \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"ci-script"}'
+```
+
+The response includes the full API key only once:
+
+```json
+{
+  "data": {
+    "id": "api-key-id",
+    "name": "ci-script",
+    "prefix": "safe-prefix",
+    "api_key": "sentinel_safe-prefix_secret-value",
+    "is_active": true,
+    "created_at": "2026-07-01T12:00:00+00:00"
+  }
+}
+```
+
+Use the key with `X-API-Key`:
+
+```bash
+curl http://localhost:8000/api/v1/notes \
+  -H "X-API-Key: $SENTINEL_API_KEY"
+```
+
+List keys without exposing secrets:
+
+```bash
+curl http://localhost:8000/api/v1/api-keys \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Revoke a key:
+
+```bash
+curl -X DELETE http://localhost:8000/api/v1/api-keys/$KEY_ID \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Revoked keys are marked inactive and can no longer authenticate requests.
+
 ## Rate Limiting Strategy
 
-Authenticated routes use a fixed-window rate limit keyed by user ID. The default
-limit is controlled by `RATE_LIMIT_PER_MINUTE`.
+Authenticated routes use a fixed-window rate limit. JWT requests are keyed by
+user ID, while API-key requests are keyed by API key ID.
 
 Behavior:
 
+- JWT requests default to `60` requests per minute.
+- API-key requests default to `100` requests per minute.
 - Allowed requests receive `X-RateLimit-Remaining`.
+- Responses include `X-RateLimit-Limit`.
 - Blocked requests return HTTP `429` with `Retry-After`.
 - Redis failures fail open so users are not locked out by a cache outage.
 - Metrics record allowed requests, blocked requests, and backend failures.
@@ -128,6 +189,23 @@ The schema is intentionally small but includes production-relevant constraints.
 | `notes` | `body` | Required note body. |
 | `notes` | `idempotency_key` | Optional client retry key. |
 | `notes` | `created_at` | Timezone-aware creation timestamp. |
+| `api_keys` | `id` | UUID primary key. |
+| `api_keys` | `user_id` | Owner ID. |
+| `api_keys` | `key_hash` | Secure hash of the full API key. |
+| `api_keys` | `name` | User-friendly key name. |
+| `api_keys` | `prefix` | Short display and lookup prefix. |
+| `api_keys` | `is_active` | Revocation status. |
+| `api_keys` | `last_used_at` | Last successful API-key auth timestamp. |
+| `api_keys` | `revoked_at` | Revocation timestamp. |
+| `audit_logs` | `id` | UUID primary key. |
+| `audit_logs` | `user_id` | User associated with the event, when available. |
+| `audit_logs` | `event_type` | Event name such as `api_key_created`. |
+| `audit_logs` | `resource_type` | Resource category such as `api_key` or `note`. |
+| `audit_logs` | `resource_id` | Resource identifier. |
+| `audit_logs` | `ip_address` | Request client IP, when available. |
+| `audit_logs` | `user_agent` | Request user agent, when available. |
+| `audit_logs` | `metadata` | Additional event context. |
+| `audit_logs` | `created_at` | Timezone-aware event timestamp. |
 
 The `notes` table has a unique constraint on `(user_id, idempotency_key)`. This
 lets a client safely retry `POST /api/v1/notes` with the same
@@ -187,7 +265,22 @@ Tracked signals:
 - Request latency histogram buckets.
 - Rate-limit allow/block counters.
 - Rate-limit backend failure counter.
+- API-key auth success and failure counters.
+- API-key creation and revocation counters.
+- Audit-log write counters.
 - Request IDs in both logs and response headers.
+
+Audit logs are written for:
+
+- API key creation.
+- API key revocation.
+- Invalid API key attempts.
+- Rate-limit violations.
+- Note creation.
+- Note deletion.
+
+Audit logging is best-effort: failures are logged but do not crash the request
+path.
 
 Health checks are split by operational purpose:
 
@@ -212,6 +305,9 @@ Covered areas:
 - Pagination behavior.
 - Idempotent note creation.
 - Rate limiting and rate-limit headers.
+- API key creation, listing, revocation, authentication, and hashed storage.
+- Invalid and revoked API key failures.
+- Audit log creation for security and resource events.
 - Health checks.
 - Prometheus metrics and JSON log formatting.
 - Alembic migrations reaching the latest head.
@@ -287,6 +383,7 @@ DATABASE_URL=postgresql+psycopg2://user:password@host:5432/database
 REDIS_URL=memory://
 JWT_SECRET=replace-with-a-generated-secret
 RATE_LIMIT_PER_MINUTE=20
+API_KEY_RATE_LIMIT_PER_MINUTE=100
 ```
 
 Use a real Redis URL instead of `memory://` when running multiple API instances
@@ -304,7 +401,8 @@ or when rate-limit counters must survive restarts.
 - **Startup migrations:** Simple for a small service, but larger systems may
   prefer a separate migration job to avoid deploy-time coupling.
 - **JWT-only auth:** Keeps the service stateless, but token revocation would
-  require an additional denylist or session store.
+  require an additional denylist or session store. API keys cover automation
+  use cases but still need revocation and audit logging.
 - **No frontend:** The deployed app focuses on backend engineering. FastAPI docs
   provide an interactive interface, but a polished UI could improve demos.
 
@@ -315,6 +413,7 @@ or when rate-limit counters must survive restarts.
 - Add update endpoints for notes and soft-delete behavior.
 - Add refresh tokens or token revocation for more complete auth lifecycle
   management.
+- Add API key scopes so keys can be limited to specific operations.
 - Add a real Grafana dashboard connected to Prometheus data.
 - Add Terraform or Pulumi for repeatable infrastructure provisioning.
 - Add OpenTelemetry traces for cross-service observability.
