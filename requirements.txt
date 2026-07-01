@@ -25,7 +25,6 @@ prometheus-client==0.25.0
 psycopg2-binary==2.9.12
 pycparser==3.0
 pydantic==2.12.5
-pydantic_core==2.41.5
 Pygments==2.19.2
 PyJWT==2.13.0
 pytest==9.0.3
