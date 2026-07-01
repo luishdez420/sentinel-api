@@ -41,7 +41,8 @@ class Settings:
     database_url: str
     redis_url: str
     jwt_secret: str
-    rate_limit_per_minute: int = 20
+    rate_limit_per_minute: int = 60
+    api_key_rate_limit_per_minute: int = 100
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 
@@ -65,6 +66,8 @@ class Settings:
 
         if self.rate_limit_per_minute <= 0:
             raise ConfigurationError("RATE_LIMIT_PER_MINUTE must be positive")
+        if self.api_key_rate_limit_per_minute <= 0:
+            raise ConfigurationError("API_KEY_RATE_LIMIT_PER_MINUTE must be positive")
 
 
 def get_settings() -> Settings:
@@ -75,8 +78,9 @@ def get_settings() -> Settings:
         jwt_secret=_required_env("JWT_SECRET"),
         rate_limit_per_minute=_int_env(
             "RATE_LIMIT_PER_MINUTE",
-            _int_env("RATE_LIMIT", 20),
+            _int_env("RATE_LIMIT", 60),
         ),
+        api_key_rate_limit_per_minute=_int_env("API_KEY_RATE_LIMIT_PER_MINUTE", 100),
         access_token_expire_minutes=_int_env("ACCESS_TOKEN_EXPIRE_MINUTES", 30),
     )
     settings.validate()

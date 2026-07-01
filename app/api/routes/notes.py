@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_current_user
@@ -12,6 +12,7 @@ from app.api.schemas import (
     NotesPageEnvelope,
     PageMeta,
 )
+from app.core.audit import write_audit_log
 from app.db.models import Note, User
 
 router = APIRouter(prefix="/notes", tags=["notes"])
@@ -40,6 +41,7 @@ def _note_response(note: Note) -> NoteResponse:
     responses={**ERROR_RESPONSES, 200: {"model": NoteEnvelope}},
 )
 def create_note(
+    request: Request,
     response: Response,
     data: NoteCreateRequest,
     db: Session = Depends(get_db),
@@ -73,6 +75,16 @@ def create_note(
     db.add(note)
     db.commit()
     db.refresh(note)
+
+    write_audit_log(
+        db,
+        event_type="note_created",
+        user_id=current_user.id,
+        resource_type="note",
+        resource_id=note.id,
+        request=request,
+        metadata={"auth_method": getattr(request.state, "auth_method", "unknown")},
+    )
 
     return NoteEnvelope(data=_note_response(note))
 
@@ -124,6 +136,7 @@ def get_note(
 )
 def delete_note(
     note_id: str,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -137,4 +150,13 @@ def delete_note(
 
     db.delete(note)
     db.commit()
+    write_audit_log(
+        db,
+        event_type="note_deleted",
+        user_id=current_user.id,
+        resource_type="note",
+        resource_id=note_id,
+        request=request,
+        metadata={"auth_method": getattr(request.state, "auth_method", "unknown")},
+    )
     return DeleteEnvelope(data=DeleteResponse(id=note_id))

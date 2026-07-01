@@ -44,8 +44,14 @@ async def test_rate_limit_metrics_are_recorded(client, register_and_login, monke
     response = await client.get("/metrics")
 
     assert response.status_code == 200
-    assert 'sentinel_rate_limit_events_total{outcome="allowed"}' in response.text
-    assert 'sentinel_rate_limit_events_total{outcome="blocked"}' in response.text
+    assert (
+        'sentinel_rate_limit_events_total{auth_method="jwt",outcome="allowed"}'
+        in response.text
+    )
+    assert (
+        'sentinel_rate_limit_events_total{auth_method="jwt",outcome="blocked"}'
+        in response.text
+    )
 
 
 def test_json_formatter_outputs_structured_log_line():
