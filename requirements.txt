@@ -29,7 +29,7 @@ pydantic_core==2.41.5
 Pygments==2.19.2
 PyJWT==2.13.0
 pytest==9.1.1
-python-dotenv==1.2.2
+python-dotenv==1.2.3
 redis==8.0.1
 ruff==0.16.2
 SQLAlchemy==2.0.52
