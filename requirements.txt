@@ -36,4 +36,4 @@ SQLAlchemy==2.0.52
 starlette==1.6.0
 typing-inspection==0.4.2
 typing_extensions==4.16.0
-uvicorn==0.51.0
+uvicorn==0.54.0
